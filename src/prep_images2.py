@@ -13,6 +13,18 @@ floor(1.2)
 floor(3.5)
 os.path.expanduser('~')
 
+def create_dir(path, name):
+    path = os.path.expanduser(path)
+    full_path = os.path.join(path, name)
+    if not os.path.exists(full_path):
+        try:
+            os.makedirs(full_path)
+        except:
+            print('Nope to {} !'.format(full_path))
+            raise
+            return False
+    return full_path
+
 def count_glyphs(parent_dir):
     """Counts the hieroglyph images in the parent_dir folder. Returns a dictionary
     with the glyph names as keys and the counts as values."""
@@ -31,32 +43,23 @@ def count_glyphs(parent_dir):
             counts['unknown'] += 1
             file_names['unknown'].append(f)
     return (counts, file_names)
-list(count_glyphs('~/p5/data/raw/Preprocessed')[0].items())[:5]
+sorted(list(count_glyphs('~/p5/data/raw/Preprocessed')[0].items()), key=lambda x: x[1], reverse=True)[:5]
 
 def setup_dirs(parent_dir):
     """Creates train, test, and valid subdirectories in the parent_dir directory"""
     path = os.path.expanduser(parent_dir)
     dirs = ['train', 'test', 'valid', 'enhance']
-    if path[-1] != '/':
-        dirs = [path + '/' + name for name in dirs]
-    else:
-        dirs = [path + name for name in dirs]
     for dir in dirs:
         try:
-            if not os.path.exists(dir):
-                os.makedirs(dir)
+            if not os.path.exists(os.path.join(path, dir)):
+                os.makedirs(os.path.join(path, dir))
         except:
             raise
     return True
 setup_dirs('~/p5/test')
 
-def check_slashes(path):
-    if path[-1] == '/':
-        return path
-    else:
-        return path + '/'
-
-def split_glyphs(source, dest, split=0.8, min_count=50):
+def split_glyphs_binary(source, dest, split=0.8, min_count=50):
+    """Currently broken."""
     dest = check_slashes(os.path.expanduser(dest))
     source = check_slashes(os.path.expanduser(source))
     try:
@@ -90,24 +93,54 @@ def split_glyphs(source, dest, split=0.8, min_count=50):
                     else:
                         shutil.copy2(file, dest + 'valid/unknown')
     return True
-split_glyphs('~/p5/data/raw/Preprocessed', '~/p5/binary_glyphs')
+# split_glyphs_binary('~/p5/data/raw/Preprocessed', '~/p5/m17_only')
 
+def split_glyphs(source, dest, split=0.8, min_count=50):
+    dest = os.path.expanduser(dest)
+    try:
+        setup_dirs(dest)
+    except:
+        raise
+    glyph_counts, glyph_files = count_glyphs(source)
+    # print(list(glyph_files.keys())[:8])
+    for glyph, cnt in glyph_counts.items():
+        n_glyphs = cnt
+        n_train = floor(n_glyphs * split)
+        n_test = (n_glyphs - n_train) // 2
+        n_valid = n_glyphs - n_train - n_test
+        files = glyph_files[glyph]
+        shuffle(files)
+        if cnt >= min_count and glyph != 'unknown':
+            for dir in ['train', 'test', 'valid']:
+                if not os.path.exists(os.path.join(dest, dir, glyph)):
+                    os.makedirs(os.path.join(dest, dir, glyph))
+            for idx, file in enumerate(files):
+                if idx < n_train:
+                    shutil.copy2(file, os.path.join(dest, 'train/{}/'.format(glyph)))
+                    # shutil.copy2(file, dest + 'train/{}/'.format(glyph))
+                elif idx >= n_train and idx < n_train + n_test:
+                    shutil.copy2(file, os.path.join(dest, 'test/{}/'.format(glyph)))
+                    # shutil.copy2(file, dest + 'test/{}/'.format(glyph))
+                else:
+                    shutil.copy2(file, os.path.join(dest, 'valid/{}/'.format(glyph)))
+        else:
+            for dir in ['train', 'test', 'valid']:
+                if not os.path.exists(os.path.join(dest, dir, 'unknown')):
+                    os.makedirs(os.path.join(dest, dir, 'unknown'))
+            for idx, file in enumerate(files):
+                if idx < n_train:
+                    shutil.copy2(file, os.path.join(dest, 'train/unknown/'))
+                    # shutil.copy2(file, dest + 'train/{}/'.format(glyph))
+                elif idx >= n_train and idx < n_train + n_test:
+                    shutil.copy2(file, os.path.join(dest, 'test/unknown/'))
+                    # shutil.copy2(file, dest + 'test/{}/'.format(glyph))
+                else:
+                    shutil.copy2(file, os.path.join(dest, 'valid/unknown/'))
+    return True
+split_glyphs('~/p5/data/raw/Preprocessed', '~/p5/data/m17_only', min_count=307)
 
-def create_dir(path, name):
-    path = os.path.expanduser(path)
-    if path[-1] != '/':
-        path += '/'
-        full_path = path + name
-    else:
-        full_path = path + name
-    if not os.path.exists(full_path):
-        try:
-            os.makedirs(full_path)
-        except:
-            print('Nope to {} !'.format(full_path))
-            raise
-            return False
-    return full_path
+os.path.join(os.path.expanduser('~/p5/'), 'one', 'two', 'three')
+
 
 def count_and_sort_glyphs(train_dir, test_dir, valid_dir, split=0.8, min_count=10, min_to_enhance=5):
     """Copies train and test data to appropriate directories"""
