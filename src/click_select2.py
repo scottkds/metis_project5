@@ -79,9 +79,11 @@ elif args['quarter'] == '2':
 elif args['quarter'] == '3':
 	print(args['quarter'])
 	image = image[half_height:, :half_width].copy()
-else:
+elif args['quarter'] == '4':
 	print(args['quarter'])
 	image = image[half_height:, half_width:].copy()
+else:
+	pass
 
 save_path = args['path']
 if not os.path.exists(os.path.join(save_path, 'glyphs')):
