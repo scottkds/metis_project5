@@ -1,3 +1,8 @@
+# THis program automatically splits an image dataset into three parts for train,
+# test, and validate. The inputs are a source, destination, and a proport of the
+# files to be used for testing purposes. The source is assumed to be a directory
+# with subdirectories of images in which each subdirectory is a class of images.
+
 import os
 import shutil
 from math import floor
@@ -27,7 +32,6 @@ def split(source, dest, split_portion=0.8):
         n_test = len(files) - n_train - n_valid
         print(dir, n_train, n_valid, n_test)
         for idx, file in enumerate(files):
-            # print(dir, file)
             if idx < n_train:
                 shutil.copy2(os.path.join(source, dir, file), os.path.join(dest, 'train', dir))
             elif idx >= n_train and idx < n_train + n_valid:

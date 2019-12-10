@@ -1,4 +1,7 @@
-# import the necessary packages
+# This program allows the user to automatically save image segments. The image
+# segments are 40x40
+
+# imports
 import argparse
 import cv2
 import os
@@ -11,6 +14,8 @@ glyph = 'glyphs'
 save_path = None
 
 def click_and_crop(event, x, y, flags, param):
+	"""Selects a 40x40 window of the displayed image and automatically saves
+	the image segement."""
 	# grab references to the global variables
 	global refPt, cropping, img_shape, glyph, save_path
 
@@ -19,6 +24,9 @@ def click_and_crop(event, x, y, flags, param):
 	# performed
 	if event == cv2.EVENT_LBUTTONDOWN:
 		print('Cropping at x = {}, y = {}'.format(x, y))
+		# x_coord and y_coord are the cooordinates for the center point of the
+		# image segement. If a boundry is detected the window is moved adjusted
+		# to be totall within the image.
 		x_coord = x - 20
 		y_coord = y - 20
 		if x_coord < 0:
@@ -43,8 +51,6 @@ def click_and_crop(event, x, y, flags, param):
 		print(file)
 		cv2.imwrite(file, crop_img)
 		# draw a rectangle around the region of interest
-		# cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
-		# cv2.imshow("image", image)
 		cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
 		cv2.imshow("image", image)
 
@@ -66,10 +72,15 @@ args = vars(ap.parse_args())
 
 # load the image, clone it, and setup the mouse callback function
 image = cv2.imread(args["image"])
+
+# Get the image dimensions
 height, width, depth = image.shape
 print((height, width, depth))
 half_width = width // 2
 half_height = height // 2
+
+# The quarters aprameter splits the image into 4ths so it is easier to see on
+# the screen.
 if args['quarter'] == '1':
 	print(args['quarter'])
 	image = image[:half_height, :half_width].copy()
@@ -85,6 +96,7 @@ elif args['quarter'] == '4':
 else:
 	pass
 
+# Set up the save path if it doesn't already exist.
 save_path = args['path']
 if not os.path.exists(os.path.join(save_path, 'glyphs')):
 	os.makedirs(os.path.join(save_path, 'glyphs'))
